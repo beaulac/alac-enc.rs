@@ -1,0 +1,6 @@
+[package]
+name = "alac-enc"
+version = "0.1.0"
+authors = ["Antoine Beauvais-Lacasse <antoine.beaulac@gmail.com>"]
+
+[dependencies]
