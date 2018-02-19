@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Antoine Beauvais-Lacasse <antoine.beaulac@gmail.com>"]
 
 [dependencies]
+cpp_to_rust_generator = "0.2.0"
+tempdir = "0.3.6"
 
 [build-dependencies]
+cpp_to_rust_generator = "0.2.0"
 bindgen = "0.26.3"
+tempdir = "0.3.6"

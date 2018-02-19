@@ -1,15 +1,18 @@
-use common::file_utils::{PathBufWithAdded, create_dir};
-use common::utils::{run_command, add_env_path_item};
-use common::cpp_lib_builder::{CppLibBuilder, BuildType};
-use common::errors::fancy_unwrap;
-use config::{Config, CrateProperties, CacheUsage};
-use common::cpp_build_config::CppBuildConfigData;
-use common::target;
-use std::process::Command;
-use std::path::PathBuf;
-use tests::TempTestDir;
+extern crate cpp_to_rust_generator;
+extern crate tempdir;
 
-fn build_cpp_lib() -> TempTestDir {
+use cpp_to_rust_generator::common::file_utils::{PathBufWithAdded, create_dir, create_dir_all};
+use cpp_to_rust_generator::common::utils::{run_command, add_env_path_item};
+use cpp_to_rust_generator::common::cpp_lib_builder::{CppLibBuilder, BuildType};
+use cpp_to_rust_generator::common::errors::fancy_unwrap;
+use cpp_to_rust_generator::config::{Config, CrateProperties, CacheUsage};
+use cpp_to_rust_generator::common::cpp_build_config::CppBuildConfigData;
+use cpp_to_rust_generator::common::target;
+use std::process::Command;
+use std::path::{Path, PathBuf};
+
+
+fn build_cpp_lib() -> PathBuf {
     let cpp_lib_source_dir = {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("alac");
@@ -17,9 +20,17 @@ fn build_cpp_lib() -> TempTestDir {
         path
     };
     assert!(cpp_lib_source_dir.exists());
-    let temp_dir = TempTestDir::new("test_full_run");
-    let build_dir = temp_dir.path().with_added("build");
-    let install_dir = temp_dir.path().with_added("install");
+
+    let output_dir = {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("output");
+        path
+    };
+
+    let build_dir = output_dir.as_path().join("intermediate");
+
+    let install_dir = output_dir.as_path().join("install");
+
     if !build_dir.exists() {
         create_dir(&build_dir).unwrap();
     }
@@ -35,21 +46,20 @@ fn build_cpp_lib() -> TempTestDir {
         cmake_vars: Vec::new(),
     }
         .run());
-    temp_dir
+    output_dir
 }
 
-#[test]
-fn full_run() {
-    let temp_dir = build_cpp_lib();
-    let crate_dir = temp_dir.path().with_added("crate");
-    let cpp_install_lib_dir = temp_dir.path().with_added("install").with_added("lib");
+fn main() {
+    let output_dir = build_cpp_lib();
+    let crate_dir = output_dir.as_path().join("crate");
+    let cpp_install_lib_dir = output_dir.as_path().join("install/lib");
     assert!(cpp_install_lib_dir.exists());
     let crate_properties = CrateProperties::new("rust_alac", "0.0.0");
 
     let mut config = Config::new(&crate_dir,
-                                 temp_dir.path().with_added("cache"),
+                                 output_dir.as_path().join("cache"),
                                  crate_properties);
-    config.add_include_directive("alac/all.h");
+    config.add_include_directive("alac_all.h");
     let include_path = {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("alac");
@@ -89,10 +99,13 @@ fn full_run() {
     }
     config.set_crate_template_path(&crate_template_path);
     config.set_cache_usage(CacheUsage::None);
+
+    config.set_write_dependencies_local_paths(false);
+
     fancy_unwrap(config.exec());
     assert!(crate_dir.exists());
 
-    for cargo_cmd in &["update", "build", "test", "doc"] {
+    for cargo_cmd in &["update", "build"] {
         let mut command = Command::new("cargo");
         command.arg(cargo_cmd);
         command.arg("-v");

@@ -15,7 +15,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB sources src/*.c)
 file(GLOB sources src/*.cpp)
 file(GLOB headers include/*.h)
-add_library(ctrt1 SHARED ${sources})
+add_library(alac SHARED ${sources})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 add_definitions(-DCTRT1_LIBRARY)
 
